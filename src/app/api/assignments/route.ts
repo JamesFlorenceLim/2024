@@ -4,72 +4,64 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 export async function POST(req: NextRequest) {
-  const { van_id, operator_id } = await req.json();
+  const { operator_id, van_ids } = await req.json();
 
   try {
-    const existingAssignment = await prisma.assignment.findFirst({
-      where: {
-        OR: [
-          { van_id },
-          { operator_id }
-        ]
-      }
-    });
+    const newAssignments = await Promise.all(
+      van_ids.map(async (van_id: number) => {
+        const existingAssignment = await prisma.assignment.findFirst({
+          where: { van_id },
+        });
 
-    if (existingAssignment) {
-      return NextResponse.json(
-        { message: 'Van or operator is already assigned' },
-        { status: 400 }
-      );
-    }
+        if (existingAssignment) {
+          throw new Error(`Van with ID ${van_id} is already assigned`);
+        }
 
-    const newAssignment = await prisma.assignment.create({
-      data: {
-        van_id,
-        operator_id
-      }
-    });
+        return prisma.assignment.create({
+          data: {
+            van_id,
+            operator_id,
+          },
+        });
+      })
+    );
 
-    return NextResponse.json(newAssignment, { status: 201 });
+    return NextResponse.json(newAssignments, { status: 201 });
   } catch (error: any) {
     return NextResponse.json({ message: 'Failed to add assignment', error: error.message }, { status: 500 });
   }
 }
 
 export async function PUT(req: NextRequest) {
-  const { id, van_id, operator_id } = await req.json();
+  const { id, operator_id, van_ids } = await req.json();
 
   try {
-    const existingAssignment = await prisma.assignment.findFirst({
-      where: {
-        AND: [
-          {
-            OR: [
+    const updatedAssignments = await Promise.all(
+      van_ids.map(async (van_id: number) => {
+        const existingAssignment = await prisma.assignment.findFirst({
+          where: {
+            AND: [
               { van_id },
-              { operator_id }
-            ]
+              { id: { not: id } },
+            ],
           },
-          { id: { not: id } }
-        ]
-      }
-    });
+        });
 
-    if (existingAssignment) {
-      return NextResponse.json(
-        { message: 'Van or operator is already assigned' },
-        { status: 400 }
-      );
-    }
+        if (existingAssignment) {
+          throw new Error(`Van with ID ${van_id} is already assigned`);
+        }
 
-    const updatedAssignment = await prisma.assignment.update({
-      where: { id },
-      data: {
-        van_id,
-        operator_id
-      }
-    });
+        return prisma.assignment.update({
+          where: { id },
+          data: {
+            van_id,
+            operator_id,
+          },
+        });
+      })
+    );
 
-    return NextResponse.json({ message: 'Assignment updated successfully', assignment: updatedAssignment }, { status: 200 });
+    return NextResponse.json({ message: 'Assignment updated successfully', assignments: updatedAssignments }, { status: 200 });
   } catch (error: any) {
     return NextResponse.json({ message: 'Failed to update assignment', error: error.message }, { status: 500 });
   }
@@ -77,7 +69,13 @@ export async function PUT(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
-    const assignments = await prisma.assignment.findMany();
+    const assignments = await prisma.assignment.findMany({
+      include: {
+        Operator: true, // Ensure this matches the model name in your schema
+        Van: true,      // Ensure this matches the model name in your schema
+        Driver: true,   // Ensure this matches the model name in your schema
+      },
+    });
     return NextResponse.json(assignments);
   } catch (error: any) {
     return NextResponse.json({ message: 'Failed to retrieve assignments', error: error.message }, { status: 500 });
@@ -89,11 +87,27 @@ export async function DELETE(req: NextRequest) {
 
   try {
     const deletedAssignment = await prisma.assignment.delete({
-      where: { id }
+      where: { id },
     });
 
     return NextResponse.json({ message: 'Assignment deleted successfully', assignment: deletedAssignment }, { status: 200 });
   } catch (error: any) {
     return NextResponse.json({ message: 'Failed to delete assignment', error: error.message }, { status: 500 });
+  }
+}
+
+export async function assignDriver(req: NextRequest) {
+  const { assignment_id, driver_id } = await req.json();
+
+  try {
+    const assignment = await prisma.assignment.update({
+      where: { id: assignment_id },
+      data: { driver_id },
+    });
+
+    return NextResponse.json(assignment);
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ error: errorMessage }, { status: 400 });
   }
 }

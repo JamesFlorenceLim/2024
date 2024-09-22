@@ -1,12 +1,35 @@
 "use client";
 
-import { useState, useEffect, ChangeEvent, FormEvent } from "react";
-import axios from "axios";
-import Modal from "./Modal"; // Import the Modal component
-import { Operator } from "@/types";
+import React, { useState, useEffect, ChangeEvent, FormEvent } from 'react';
+import axios from 'axios';
+import Modal from './Modal'; // Import the Modal component
+
+const dlOptions = ['A', 'A1', 'B', 'B1', 'B2', 'C', 'D', 'BE', 'CE'];
+const conditionOptions = ['1', '2', '3', '4', '5'];
+
+interface Operator {
+  id?: number;
+  firstname: string;
+  middlename: string;
+  lastname: string;
+  license_no: string;
+  contact: string;
+  region: string;
+  city: string;
+  brgy: string;
+  street: string;
+  type: string;
+  dl_codes: string[]; // Ensure dl_codes is of type string[]
+  conditions: string[]; // Ensure conditions is of type string[]
+  expiration_date: string;
+  emergency_name: string;
+  emergency_address: string;
+  emergency_contact: string;
+  archived: boolean;
+}
 
 const OperatorForm = () => {
-  const [operator, setOperator] = useState({
+  const [operator, setOperator] = useState<Operator>({
     firstname: "",
     middlename: "",
     lastname: "",
@@ -17,8 +40,8 @@ const OperatorForm = () => {
     brgy: "",
     street: "",
     type: "",
-    dl_codes: "",
-    conditions: "",
+    dl_codes: [], // Initialize as an empty array of strings
+    conditions: [], // Initialize as an empty array of strings
     expiration_date: "",
     emergency_name: "",
     emergency_address: "",
@@ -104,7 +127,9 @@ const OperatorForm = () => {
   };
 
   const handleArchive = (operator: Operator) => {
-    setOperatorIdToArchive(operator.id);
+    if (operator.id !== undefined) {
+      setOperatorIdToArchive(operator.id);
+    }
     setIsConfirmArchiveOpen(true);
   };
 
@@ -137,10 +162,19 @@ const OperatorForm = () => {
 
   const handleRegisterChange = (event: ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = event.target;
-    setOperator((prevOperator) => ({
-      ...prevOperator,
-      [name]: type === 'checkbox' ? checked : value,
-    }));
+    if (name === 'dl_codes' || name === 'conditions') {
+      setOperator(prevState => {
+        const updatedArray = checked
+          ? [...prevState[name as 'dl_codes' | 'conditions'], value]
+          : prevState[name as 'dl_codes' | 'conditions'].filter(code => code !== value);
+        return { ...prevState, [name]: updatedArray };
+      });
+    } else {
+      setOperator((prevOperator) => ({
+        ...prevOperator,
+        [name]: type === 'checkbox' ? checked : value,
+      }));
+    }
   };
 
   const handleRegisterSubmit = async (e: FormEvent) => {
@@ -161,8 +195,8 @@ const OperatorForm = () => {
         brgy: "",
         street: "",
         type: "",
-        dl_codes: "",
-        conditions: "",
+        dl_codes: [], // Reset to empty array
+        conditions: [], // Reset to empty array
         expiration_date: "",
         emergency_name: "",
         emergency_address: "",
@@ -199,15 +233,26 @@ const OperatorForm = () => {
     }));
   };
 
-  const handleViewChange = (e: ChangeEvent<HTMLInputElement>) => {
-    if (selectedOperator) {
-      const { name, value } = e.target;
-      setSelectedOperator((prev) => ({
-        ...prev!,
-        [name]: value,
-      }));
+ 
+
+  const handleViewChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value, checked } = event.target;
+    if (name === 'dl_codes' || name === 'conditions') {
+      setSelectedOperator(prevState => {
+        if (!prevState) return prevState; // Ensure prevState is not null
+        const updatedArray = checked
+          ? [...prevState[name as keyof Operator] as string[], value]
+          : (prevState[name as keyof Operator] as string[]).filter(item => item !== value);
+        return { ...prevState, [name]: updatedArray };
+      });
+    } else {
+      setSelectedOperator(prevState => {
+        if (!prevState) return prevState; // Ensure prevState is not null
+        return { ...prevState, [name]: value };
+      });
     }
   };
+
 
   const handleViewSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -241,7 +286,7 @@ const OperatorForm = () => {
           <path d="M12 8V16M16 12L8 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
           <path d="M2.5 12C2.5 7.52166 2.5 5.28249 3.89124 3.89124C5.28249 2.5 7.52166 2.5 12 2.5C16.4783 2.5 18.7175 2.5 20.1088 3.89124C21.5 5.28249 21.5 7.52166 21.5 12C21.5 16.4783 21.5 18.7175 20.1088 20.1088C18.7175 21.5 16.4783 21.5 12 21.5C7.52166 21.5 5.28249 21.5 3.89124 20.1088C2.5 18.7175 2.5 16.4783 2.5 12Z" stroke="currentColor" strokeWidth="1.5" />
         </svg>
-        Add Operator
+        Add Driver
       </button>
 
     
@@ -274,10 +319,29 @@ const OperatorForm = () => {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 ">
       <div className="">
-        <label className="block mb-2 text-sm font-medium text-gray-900 uppercase">Region</label>
-        <input type="text" name="region" value={operator.region} onChange={handleRegisterChange} required
-          className="bg-gray-50 border-2 border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5 placeholder-gray-400 focus:border-green-600 focus:outline-none uppercase" placeholder="Region" />
-      </div>
+  <label className="block mb-2 text-sm font-medium text-gray-900 uppercase">Region</label>
+  <select name="region" value={operator.region} onChange={Registerdropdown} required
+    className="bg-gray-50 border-2 border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5 placeholder-gray-400 focus:border-green-600 focus:outline-none uppercase">
+    <option value="" disabled>Select Region</option>
+    <option value="NCR">NCR</option>
+    <option value="CAR">CAR</option>
+    <option value="Region I">Region I</option>
+    <option value="Region II">Region II</option>
+    <option value="Region III">Region III</option>
+    <option value="Region IV-A">Region IV-A</option>
+    <option value="Region IV-B">Region IV-B</option>
+    <option value="Region V">Region V</option>
+    <option value="Region VI">Region VI</option>
+    <option value="Region VII">Region VII</option>
+    <option value="Region VIII">Region VIII</option>
+    <option value="Region IX">Region IX</option>
+    <option value="Region X">Region X</option>
+    <option value="Region XI">Region XI</option>
+    <option value="Region XII">Region XII</option>
+    <option value="Region XIII">Region XIII</option>
+    <option value="BARMM">BARMM</option>
+  </select>
+</div>
       <div className="">
         <label htmlFor="city" className="block mb-2 text-sm font-medium text-gray-900 uppercase">City</label>
         <select id="city" name="city" value={operator.city} onChange={Registerdropdown} 
@@ -325,15 +389,54 @@ const OperatorForm = () => {
           className="bg-gray-50 border-2 border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5 placeholder-gray-400 focus:border-green-600 focus:outline-none uppercase" placeholder="type" />
       </div>
       <div className="">
-        <label className="block mb-2 text-sm font-medium text-gray-900 uppercase">DL Codes</label>
-        <input type="text" name="dl_codes" value={operator.dl_codes} onChange={handleRegisterChange} required
-          className="bg-gray-50 border-2 border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5 placeholder-gray-400 focus:border-green-600 focus:outline-none uppercase" placeholder="dl codes" />
+      <label className="block mb-2 text-sm font-medium text-gray-900 uppercase">DL Codes</label>
+      <div className="bg-gray-50 border-2 border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5 placeholder-gray-400 focus:border-green-600 focus:outline-none uppercase">
+        {dlOptions.map(option => (
+          <div key={option} className="flex items-center mb-2">
+            <input
+              type="checkbox"
+              name="dl_codes"
+              value={option}
+              checked={operator.dl_codes.includes(option)}
+              onChange={handleRegisterChange}
+              className="mr-2"
+            />
+            <label className="text-sm font-medium text-gray-900">{option}</label>
+          </div>
+        ))}
       </div>
-      <div className="">
+    </div>
+
+
+
+
+
+    <div className="">
+      <label className="block mb-2 text-sm font-medium text-gray-900 uppercase">Conditions</label>
+      <div className="bg-gray-50 border-2 border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5 placeholder-gray-400 focus:border-green-600 focus:outline-none uppercase">
+        {conditionOptions.map(option => (
+          <div key={option} className="flex items-center mb-2">
+            <input
+              type="checkbox"
+              name="conditions"
+              value={option}
+              checked={operator.conditions.includes(option)}
+              onChange={handleRegisterChange}
+              className="mr-2"
+            />
+            <label className="text-sm font-medium text-gray-900">{option}</label>
+          </div>
+        ))}
+      </div>
+    </div>
+
+
+
+      {/* <div className="">
         <label className="block mb-2 text-sm font-medium text-gray-900 uppercase">Conditions</label>
-        <input type="text" name="conditions" value={operator.conditions} onChange={handleRegisterChange} required
+        <input type="text" name="conditions" value={operator.conditions} onChange={handleRegisterChange} //required
           className="bg-gray-50 border-2 border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5 placeholder-gray-400 focus:border-green-600 focus:outline-none uppercase" placeholder="conditions" />
-      </div>
+      </div> */}
       <div className="">
         <label className="block mb-2 text-sm font-medium text-gray-900 uppercase">Expiration Date</label>
         <input type="date" name="expiration_date" value={operator.expiration_date} onChange={handleRegisterChange} required
@@ -375,8 +478,8 @@ const OperatorForm = () => {
 
         
         <div className="p-4 sm:p-6 lg:p-8 " style={{marginLeft:'-30rem',marginTop:'-7rem'}}>
-          <h2 className="text-2xl font-normal text-gray-600 ">Operator Overview</h2>
-          <p className="text-gray-500 dark:text-gray-400">View and manage all registered operators or add new ones to the system</p>
+          <h2 className="text-2xl font-normal text-gray-600 ">Driver Overview</h2>
+          <p className="text-gray-500 dark:text-gray-400">View and manage all registered drivers or add new ones to the system</p>
         </div>
 
         <div className=" flex flex-col overflow-x-auto sm:-mx-6 lg:-mx-8" style={{marginTop:'1rem'}}>
@@ -680,10 +783,30 @@ const OperatorForm = () => {
               className="bg-gray-50 border-2 border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5 placeholder-gray-400 focus:border-green-600 focus:outline-none uppercase" placeholder="contact no." />
           </div>
           <div>
-            <label className="block mb-2 text-sm font-medium text-gray-900 uppercase">Region</label>
-            <input type="text" name="region" value={selectedOperator.region} onChange={handleViewChange} required
-              className="bg-gray-50 border-2 border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5 placeholder-gray-400 focus:border-green-600 focus:outline-none uppercase" placeholder="Region" />
-          </div>
+  <label htmlFor="region" className="block mb-2 text-sm font-medium text-gray-900 uppercase">Region</label>
+  <select id="region" name="region" value={selectedOperator.region} onChange={Editdropdown}
+    className="bg-gray-50 border-2 border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5 placeholder-gray-400 focus:border-green-600 focus:outline-none uppercase">
+    <option value="" disabled>Select Region</option>
+    <option value="NCR">NCR</option>
+    <option value="CAR">CAR</option>
+    <option value="Region I">Region I</option>
+    <option value="Region II">Region II</option>
+    <option value="Region III">Region III</option>
+    <option value="Region IV-A">Region IV-A</option>
+    <option value="Region IV-B">Region IV-B</option>
+    <option value="Region V">Region V</option>
+    <option value="Region VI">Region VI</option>
+    <option value="Region VII">Region VII</option>
+    <option value="Region VIII">Region VIII</option>
+    <option value="Region IX">Region IX</option>
+    <option value="Region X">Region X</option>
+    <option value="Region XI">Region XI</option>
+    <option value="Region XII">Region XII</option>
+    <option value="Region XIII">Region XIII</option>
+    <option value="BARMM">BARMM</option>
+  </select>
+</div>
+          
           <div>
             <label htmlFor="city" className="block mb-2 text-sm font-medium text-gray-900 uppercase">City</label>
             <select id="city" name="city" value={selectedOperator.city} onChange={Editdropdown}
@@ -727,16 +850,43 @@ const OperatorForm = () => {
             <input type="text" name="type" value={selectedOperator.type} onChange={handleViewChange} required
               className="bg-gray-50 border-2 border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5 placeholder-gray-400 focus:border-green-600 focus:outline-none uppercase" placeholder="type" />
           </div>
+
           <div>
-            <label className="block mb-2 text-sm font-medium text-gray-900 uppercase">DL Codes</label>
-            <input type="text" name="dl_codes" value={selectedOperator.dl_codes} onChange={handleViewChange} required
-              className="bg-gray-50 border-2 border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5 placeholder-gray-400 focus:border-green-600 focus:outline-none uppercase" placeholder="dl codes" />
-          </div>
-          <div>
-            <label className="block mb-2 text-sm font-medium text-gray-900 uppercase">Conditions</label>
-            <input type="text" name="conditions" value={selectedOperator.conditions} onChange={handleViewChange} required
-              className="bg-gray-50 border-2 border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5 placeholder-gray-400 focus:border-green-600 focus:outline-none uppercase" placeholder="conditions" />
-              </div>
+        <label className="block mb-2 text-sm font-medium text-gray-900 uppercase">DL Codes</label>
+        <div className="bg-gray-50 border-2 border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5 placeholder-gray-400 focus:border-green-600 focus:outline-none uppercase">
+          {dlOptions.map(option => (
+            <div key={option} className="flex items-center mb-2">
+              <input
+                type="checkbox"
+                name="dl_codes"
+                value={option}
+                checked={selectedOperator?.dl_codes.includes(option) || false}
+                onChange={handleViewChange}
+                className="mr-2"
+              />
+              <label className="text-sm font-medium text-gray-900">{option}</label>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div>
+        <label className="block mb-2 text-sm font-medium text-gray-900 uppercase">Conditions</label>
+        <div className="bg-gray-50 border-2 border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5 placeholder-gray-400 focus:border-green-600 focus:outline-none uppercase">
+          {conditionOptions.map(option => (
+            <div key={option} className="flex items-center mb-2">
+              <input
+                type="checkbox"
+                name="conditions"
+                value={option}
+                checked={selectedOperator?.conditions.includes(option) || false}
+                onChange={handleViewChange}
+                className="mr-2"
+              />
+              <label className="text-sm font-medium text-gray-900">{option}</label>
+            </div>
+          ))}
+        </div>
+      </div>
           <div>
             <label className="block mb-2 text-sm font-medium text-gray-900 uppercase">Expiration Date</label>
             <input type="date" name="expiration_date" value={selectedOperator.expiration_date} onChange={handleViewChange} required

@@ -66,3 +66,23 @@ export interface Assignment {
   operator_id: number;
   assigned_at: string;
 }
+
+export interface Driver {
+  id: number;
+  firstname: string;
+  middlename?: string;
+  lastname: string;
+  license_no: string;
+  contact: string;
+  region: string;
+  city: string;
+  brgy: string;
+  street: string;
+  type: string[];
+  dl_codes: string;
+  conditions: string;
+  expiration_date: string;
+  emergency_name: string;
+  emergency_address: string;
+  emergency_contact: string;
+}

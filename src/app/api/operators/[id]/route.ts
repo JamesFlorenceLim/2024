@@ -38,16 +38,16 @@ export async function PUT(req: NextRequest) {
     firstname,
     middlename,
     lastname,
-    license_no,
+    
     contact,
     region,
     city,
     brgy,
     street,
-    type,
-    dl_codes,
-    conditions,
-    expiration_date,
+    
+    
+    
+    
     emergency_name,
     emergency_address,
     emergency_contact,
@@ -61,16 +61,15 @@ export async function PUT(req: NextRequest) {
         firstname,
         middlename,
         lastname,
-        license_no,
+        
         contact,
         region,
         city,
         brgy,
         street,
-        type,
-        dl_codes,
-        conditions,
-        expiration_date: new Date(expiration_date),
+        
+       
+        
         emergency_name,
         emergency_address,
         emergency_contact,

@@ -58,6 +58,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(newDriver, { status: 201 });
   } catch (error: any) {
+    console.error('Error adding driver:', error);
     return NextResponse.json({ message: 'Failed to add driver', error: error.message }, { status: 500 });
   }
 }
@@ -69,6 +70,7 @@ export async function GET(req: NextRequest) {
     });
     return NextResponse.json(drivers);
   } catch (error: any) {
+    console.error('Error retrieving drivers:', error);
     return NextResponse.json({ message: 'Failed to retrieve drivers', error: error.message }, { status: 500 });
   }
 }
@@ -88,6 +90,7 @@ export async function DELETE(req: NextRequest) {
 
     return NextResponse.json({ message: 'Driver archived successfully' }, { status: 200 });
   } catch (error: any) {
+    console.error('Error archiving driver:', error);
     return NextResponse.json({ message: 'Failed to archive driver', error: error.message }, { status: 500 });
   }
 }

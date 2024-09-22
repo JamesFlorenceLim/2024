@@ -38,8 +38,8 @@ model Driver {
   street             String
   type               String   // New field for driver or operator
   license_no         String   @unique
-  dl_codes           String   // New field for DL codes
-  conditions         String   // New field for conditions
+  dl_codes           String[]   // New field for DL codes
+  conditions         String[]  // New field for conditions
   expiration_date    DateTime // New field for expiration date
   emergency_name     String   // New field for emergency contact name
   emergency_address  String   // New field for emergency contact address
